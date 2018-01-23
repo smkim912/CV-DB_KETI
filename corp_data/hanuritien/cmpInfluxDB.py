@@ -9,11 +9,11 @@ class InfluxDB :
 	def __init__(self) :
 		pass
 
-	def open(self) :
+	def open(self, dbname) :
 		bConti = True
 		while bConti :
 			try :
-				self.m_dConn = InfluxDBClient('127.0.0.1', 8086, '', '', 'hanuritien')
+				self.m_dConn = InfluxDBClient('127.0.0.1', 8086, '', '', dbname)
 				bConti = False
 			except Exception, e :
 #time.sleep(CmpGlobal.g_nConnectionRetryInterval)
@@ -28,15 +28,19 @@ class InfluxDB :
 
 class InfluxDBManager :
 	m_oDBConn = None
+        json_body = []
 	
-	def __init__(self) :
+	def __init__(self,dbname) :
 		self.m_oDBConn = InfluxDB() 
-		self.m_oDBConn.open()
+		self.m_oDBConn.open(dbname)
 
-	def insert(self, nID, nTime, nDay_km, nTotal_km, nGPS_meter, nSpeed, nRPM, nGPS_latitude, nGPS_longitude, nGPS_azimuth, nAccel_x, nAccel_y, nDay_fuel, nTotal_fuel, nStatus, nSig_break) :
-		json_body = [
+	def insert(self, nTable, nID, nTime, nDay_km, nTotal_km, nGPS_meter, nSpeed, nRPM, nGPS_latitude, nGPS_longitude, nGPS_azimuth, nAccel_x, nAccel_y, nDay_fuel, nTotal_fuel, nStatus, nSig_break) :
+		self.json_body.append(
 			{
-			    "measurement": nID,
+			    "measurement": nTable,
+                            "tags": {
+                                "Set_ID"            :   nID
+                            },
 			    "fields": {
                                 "Daily_mileage"     :   nDay_km,
                                 "Total_mileage"     :   nTotal_km,
@@ -55,6 +59,11 @@ class InfluxDBManager :
 			    },
                             "time": nTime
 			}
-		]
-		self.m_oDBConn.insertData(json_body)
+		)
+		#self.m_oDBConn.insertData(json_body)
 		return 0
+
+        def batch(self) :
+            self.m_oDBConn.insertData(self.json_body)
+            del self.json_body[:]
+            return 0

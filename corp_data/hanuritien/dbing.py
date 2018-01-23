@@ -11,18 +11,19 @@ from datetime import datetime
 from cmpInfluxDB import InfluxDBManager
 import subprocess
 
-VERSION = '0.1.180122'
+VERSION = '0.3.180123'
 DATA_PATH = './data/hanuritien/'
+DB_NAME = 'hatidb'
+TABLE_NAME = 'hanuritien'
 
-
-print 'Run a insertion program (hanuritiem CSV to InfluxDB)'
+print 'Run a insertion program (hanuritien CSV to InfluxDB)'
 print 'Version: ' + VERSION
 
 date = datetime.today().strftime("%Y%m%d_%H%M%S")
 date = date + "-hanuritien-log"
 log = open(date, 'w')
 
-g_influxdbconn = InfluxDBManager()
+g_influxdbconn = InfluxDBManager(DB_NAME)
 
 def csv_to_influx(path):
     reader = csv.reader(open(path))
@@ -49,7 +50,7 @@ def csv_to_influx(path):
             nTotal_fuel = row[13]
             nStatus     = row[14]
             nSig_break  = row[15]
-            g_influxdbconn.insert(nID,nTime,nDay_km,nTotal_km,
+            g_influxdbconn.insert(TABLE_NAME,nID,nTime,nDay_km,nTotal_km,
                     nGPS_meter,nSpeed,nRPM,
                     nGPS_latitude,nGPS_longitude,nGPS_azimuth,
                     nAccel_x,nAccel_y,nDay_fuel,nTotal_fuel,
@@ -57,7 +58,9 @@ def csv_to_influx(path):
             row_cnt += 1
         except ValueError,UnicodeDecodeError:
             return -1
-    print path + ": file complete (%d-rows)" %(row_cnt)
+    g_influxdbconn.batch()
+    print path + ": 'csv_to_influx()' complete (%d-rows)" %(row_cnt)
+    log.write(path + ": 'csv_to_influx()' complete (%d-rows)" %(row_cnt) + "\n")
     return 0
 
 
@@ -79,10 +82,14 @@ if __name__ == "__main__":
                 dir_ret_code = csv_to_influx("%s/%s" % (path, filename))
                 if dir_ret_code == -1:
                     print "%s/%s" % (path, filename) + " has error."
+                    log.write("%s/%s" % (path, filename) + " has error." + "\n")
         end_time = time.time()
         ctime = end_time - start_time
         total_time_cnt += ctime
         print path + ": dir time took %d" %(ctime) + "s. (total: %d)" %(total_time_cnt)
+        log.write(path + ": dir time took %d" %(ctime) + "s. (total: %d)" %(total_time_cnt) + "\n")
         print "Progress...[%d/%d(%d%%)]" % (file_cnt, 
                 total_file_cnt, 
                 file_cnt/total_file_cnt*100)
+
+    log.close()
