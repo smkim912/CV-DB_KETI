@@ -4,7 +4,7 @@ import time
 import sys
 from influxdb import InfluxDBClient
 
-BATCH_WM = 1024 * 1024 * 3
+BATCH_WM = 1024 * 1024 * 2
 
 class InfluxDB :
 	m_conn = None
